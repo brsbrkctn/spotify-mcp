@@ -112,6 +112,120 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "search",
+        description: "Search Spotify for tracks, artists, albums, or playlists",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: { type: "string", description: "The search query" },
+            type: { 
+              type: "array", 
+              items: { type: "string", enum: ["track", "artist", "album", "playlist"] },
+              description: "Types of items to search for" 
+            },
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+          },
+          required: ["query", "type"],
+        },
+      },
+      {
+        name: "skip_to_next",
+        description: "Skip to the next track",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "skip_to_previous",
+        description: "Skip to the previous track",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "remove_from_playlist",
+        description: "Remove specific tracks from a playlist",
+        inputSchema: {
+          type: "object",
+          properties: {
+            playlistId: { type: "string", description: "The ID of the playlist" },
+            trackUris: { 
+              type: "array", 
+              items: { type: "string" }, 
+              description: "Array of Spotify track URIs to remove" 
+            },
+          },
+          required: ["playlistId", "trackUris"],
+        },
+      },
+      {
+        name: "get_liked_songs",
+        description: "Retrieve the user's saved tracks",
+        inputSchema: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            offset: { type: "integer", minimum: 0, default: 0 },
+          },
+        },
+      },
+      {
+        name: "save_tracks",
+        description: "Save/like tracks",
+        inputSchema: {
+          type: "object",
+          properties: {
+            trackUris: { 
+              type: "array", 
+              items: { type: "string" }, 
+              description: "Array of Spotify track IDs or URIs to save" 
+            },
+          },
+          required: ["trackUris"],
+        },
+      },
+      {
+        name: "remove_saved_tracks",
+        description: "Unsave/unlike tracks",
+        inputSchema: {
+          type: "object",
+          properties: {
+            trackUris: { 
+              type: "array", 
+              items: { type: "string" }, 
+              description: "Array of Spotify track IDs or URIs to remove" 
+            },
+          },
+          required: ["trackUris"],
+        },
+      },
+      {
+        name: "get_available_devices",
+        description: "Get a list of the user's active/available Spotify devices",
+        inputSchema: { type: "object", properties: {} },
+      },
+      {
+        name: "transfer_playback",
+        description: "Transfer playback to a specific device",
+        inputSchema: {
+          type: "object",
+          properties: {
+            deviceId: { type: "string", description: "The ID of the device to transfer to" },
+            play: { type: "boolean", description: "Whether to ensure playback continues on the new device" },
+          },
+          required: ["deviceId"],
+        },
+      },
+      {
+        name: "get_recommendations",
+        description: "Get track recommendations based on seed tracks, artists, or genres",
+        inputSchema: {
+          type: "object",
+          properties: {
+            seed_artists: { type: "array", items: { type: "string" }, description: "List of seed artist IDs" },
+            seed_genres: { type: "array", items: { type: "string" }, description: "List of seed genre names" },
+            seed_tracks: { type: "array", items: { type: "string" }, description: "List of seed track IDs" },
+            limit: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          },
+        },
+      },
     ],
   };
 });
@@ -173,6 +287,71 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
         return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
       }
+      case "search": {
+        const response = await spotifyApi.get("/search", {
+          params: {
+            q: args.query,
+            type: args.type.join(","),
+            limit: args.limit || 20,
+          },
+        });
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
+      case "skip_to_next": {
+        await spotifyApi.post("/me/player/next");
+        return { content: [{ type: "text", text: "Skipped to next track" }] };
+      }
+      case "skip_to_previous": {
+        await spotifyApi.post("/me/player/previous");
+        return { content: [{ type: "text", text: "Skipped to previous track" }] };
+      }
+      case "remove_from_playlist": {
+        await spotifyApi.delete(`/playlists/${args.playlistId}/tracks`, {
+          data: { tracks: args.trackUris.map(uri => ({ uri })) },
+        });
+        return { content: [{ type: "text", text: `Removed tracks from playlist.` }] };
+      }
+      case "get_liked_songs": {
+        const response = await spotifyApi.get("/me/tracks", {
+          params: {
+            limit: args.limit || 20,
+            offset: args.offset || 0,
+          },
+        });
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
+      case "save_tracks": {
+        const ids = args.trackUris.map(uri => uri.split(":").pop());
+        await spotifyApi.put("/me/tracks", { ids });
+        return { content: [{ type: "text", text: "Tracks saved to Liked Songs" }] };
+      }
+      case "remove_saved_tracks": {
+        const ids = args.trackUris.map(uri => uri.split(":").pop());
+        await spotifyApi.delete("/me/tracks", { data: { ids } });
+        return { content: [{ type: "text", text: "Tracks removed from Liked Songs" }] };
+      }
+      case "get_available_devices": {
+        const response = await spotifyApi.get("/me/player/devices");
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
+      case "transfer_playback": {
+        await spotifyApi.put("/me/player", {
+          device_ids: [args.deviceId],
+          play: args.play !== undefined ? args.play : true,
+        });
+        return { content: [{ type: "text", text: `Playback transferred to device ${args.deviceId}` }] };
+      }
+      case "get_recommendations": {
+        const response = await spotifyApi.get("/recommendations", {
+          params: {
+            seed_artists: args.seed_artists?.join(","),
+            seed_genres: args.seed_genres?.join(","),
+            seed_tracks: args.seed_tracks?.join(","),
+            limit: args.limit || 20,
+          },
+        });
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -186,7 +365,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Spotify Auth Endpoints
 app.get("/login", (req, res) => {
-  const scopes = "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private";
+  const scopes = "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private user-library-read user-library-modify";
   res.redirect(
     `https://accounts.spotify.com/authorize?response_type=code&client_id=${SPOTIFY_CLIENT_ID}&scope=${encodeURIComponent(
       scopes
