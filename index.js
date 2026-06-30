@@ -2,6 +2,9 @@ import express from "express";
 import dotenv from "dotenv";
 import axios from "axios";
 import cors from "cors";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
@@ -11,6 +14,9 @@ import {
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TOKEN_PATH = path.join(__dirname, ".spotify-tokens.json");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -19,10 +25,71 @@ const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/callback";
 
-// In-memory token storage (for demo purposes)
+// Token storage
 let userTokens = {
   access_token: null,
   refresh_token: null,
+  expires_at: null,
+};
+
+// Load tokens on startup
+const loadTokens = async () => {
+  if (fs.existsSync(TOKEN_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
+      userTokens = data;
+      console.log("Tokens loaded from local file.");
+      
+      // Check if we need to refresh immediately
+      if (userTokens.refresh_token && (!userTokens.expires_at || Date.now() > userTokens.expires_at)) {
+        await refreshAccessToken();
+      }
+    } catch (error) {
+      console.error("Error loading tokens:", error.message);
+    }
+  }
+};
+
+const saveTokens = (tokens) => {
+  userTokens = {
+    ...userTokens,
+    ...tokens,
+    expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : userTokens.expires_at,
+  };
+  fs.writeFileSync(TOKEN_PATH, JSON.stringify(userTokens, null, 2));
+  console.log("Tokens saved to local file.");
+};
+
+const refreshAccessToken = async () => {
+  if (!userTokens.refresh_token) return;
+
+  try {
+    const response = await axios.post(
+      "https://accounts.spotify.com/api/token",
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: userTokens.refresh_token,
+        client_id: SPOTIFY_CLIENT_ID,
+        client_secret: SPOTIFY_CLIENT_SECRET,
+      }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+    
+    saveTokens(response.data);
+    console.log("Access token refreshed.");
+  } catch (error) {
+    console.error("Error refreshing token:", error.response?.data || error.message);
+  }
+};
+
+const getValidToken = async () => {
+  if (!userTokens.access_token) return null;
+
+  if (userTokens.expires_at && Date.now() > userTokens.expires_at - 60000) {
+    await refreshAccessToken();
+  }
+
+  return userTokens.access_token;
 };
 
 const server = new Server(
@@ -272,13 +339,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  if (!userTokens.access_token) {
+  const accessToken = await getValidToken();
+
+  if (!accessToken) {
     throw new Error("Spotify not authenticated. Please visit /login");
   }
 
   const spotifyApi = axios.create({
     baseURL: "https://api.spotify.com/v1",
-    headers: { Authorization: `Bearer ${userTokens.access_token}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   try {
@@ -441,7 +510,8 @@ app.get("/callback", async (req, res) => {
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
-    userTokens = response.data;
+    
+    saveTokens(response.data);
     res.send("Authentication successful! You can now use the Spotify MCP.");
   } catch (error) {
     res.status(500).send("Authentication failed");
@@ -464,6 +534,7 @@ app.post("/messages", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await loadTokens();
   console.log(`Spotify MCP server running on port ${PORT}`);
 });
