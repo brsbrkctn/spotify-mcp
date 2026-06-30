@@ -62,5 +62,10 @@ Recommended for accessing your home Spotify setup from anywhere via cloud platfo
 - **Single-User Architecture**: Designed as a private, single-tenant instance. Do not deploy a single shared instance for multiple users as session state is handled globally.
 - **Minimalist Design**: Zero-dependency frontend; pure SSE-based MCP implementation for maximum performance.
 
+## Contributing
+Contributions are welcome via forks and pull requests.
+
 ## License
-MIT. Built with precision by **brsberkectn**.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+The software is provided "as-is", without warranty of any kind, express or implied.
