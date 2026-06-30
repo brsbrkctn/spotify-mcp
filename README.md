@@ -12,6 +12,7 @@ A robust Node.js/Express Model Context Protocol (MCP) server for Spotify, utiliz
 - **Search**: Search for music, artists, albums, and more.
 - **Recommendations**: Get music suggestions based on seeds.
 - **Library**: Manage liked songs.
+- **Queue & Modes**: Manage your playback queue, shuffle, and repeat modes.
 - **OAuth Integration**: Built-in flow to authenticate with Spotify.
 
 ## Setup
@@ -55,6 +56,10 @@ Visit `http://localhost:3000/login` in your browser to link your Spotify account
 - `skip_to_previous`: Skip to the previous track.
 - `get_available_devices`: List active/available devices.
 - `transfer_playback`: Transfer playback to a device (`deviceId`, `play`).
+- `set_shuffle_state`: Toggle shuffle (`state`: boolean).
+- `set_repeat_mode`: Set repeat mode (`state`: "track", "context", or "off").
+- `add_to_queue`: Add a track to the queue (`uri`).
+- `get_queue`: Get current queue and playing track.
 
 ### Playlists
 - `create_playlist`: Create a playlist (`name`, `description`, `public`).

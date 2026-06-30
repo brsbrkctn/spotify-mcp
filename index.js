@@ -226,6 +226,44 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           },
         },
       },
+      {
+        name: "set_shuffle_state",
+        description: "Toggle shuffle on or off",
+        inputSchema: {
+          type: "object",
+          properties: {
+            state: { type: "boolean", description: "true to shuffle, false to turn off" },
+          },
+          required: ["state"],
+        },
+      },
+      {
+        name: "set_repeat_mode",
+        description: "Set the repeat mode",
+        inputSchema: {
+          type: "object",
+          properties: {
+            state: { type: "string", enum: ["track", "context", "off"], description: "The repeat mode" },
+          },
+          required: ["state"],
+        },
+      },
+      {
+        name: "add_to_queue",
+        description: "Add an item to the user's current playback queue",
+        inputSchema: {
+          type: "object",
+          properties: {
+            uri: { type: "string", description: "The Spotify URI of the item to add" },
+          },
+          required: ["uri"],
+        },
+      },
+      {
+        name: "get_queue",
+        description: "Get the list of tracks in the user's queue",
+        inputSchema: { type: "object", properties: {} },
+      },
     ],
   };
 });
@@ -350,6 +388,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             limit: args.limit || 20,
           },
         });
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
+      case "set_shuffle_state": {
+        await spotifyApi.put(`/me/player/shuffle?state=${args.state}`);
+        return { content: [{ type: "text", text: `Shuffle set to ${args.state}` }] };
+      }
+      case "set_repeat_mode": {
+        await spotifyApi.put(`/me/player/repeat?state=${args.state}`);
+        return { content: [{ type: "text", text: `Repeat mode set to ${args.state}` }] };
+      }
+      case "add_to_queue": {
+        await spotifyApi.post(`/me/player/queue?uri=${encodeURIComponent(args.uri)}`);
+        return { content: [{ type: "text", text: `Added ${args.uri} to queue.` }] };
+      }
+      case "get_queue": {
+        const response = await spotifyApi.get("/me/player/queue");
         return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
       }
       default:
