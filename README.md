@@ -1,90 +1,76 @@
 # Spotify MCP Server
 
-A robust Node.js/Express Model Context Protocol (MCP) server for Spotify, utilizing Server-Sent Events (SSE).
+Spotify için geliştirilmiş, Server-Sent Events (SSE) kullanan kapsamlı bir Model Context Protocol (MCP) sunucusu.
 
-## Features
+## Özellikler
 
-- **Get Current Track**: See what's playing right now.
-- **Play/Pause**: Control playback.
-- **Set Volume**: Adjust volume levels.
-- **Get Playback State**: Full status of your Spotify player.
-- **Playlist Management**: Create playlists, add tracks, and list user playlists.
-- **Search**: Search for music, artists, albums, and more.
-- **Recommendations**: Get music suggestions based on seeds.
-- **Library**: Manage liked songs.
-- **Queue & Modes**: Manage your playback queue, shuffle, and repeat modes.
-- **OAuth Integration**: Built-in flow to authenticate with Spotify.
+- **Oynatma Kontrolü**: Duraklat, devam et, ses ayarla, parça atla, shuffle ve repeat modlarını yönet.
+- **Kütüphane & Çalma Listeleri**: Çalma listesi oluştur, parça ekle/çıkar, beğenilen şarkıları yönet.
+- **Arama & Keşif**: Şarkı, sanatçı ve albüm ara, öneriler al.
+- **Cihaz Yönetimi**: Mevcut cihazları listele ve oynatmayı aktar.
+- **Kalıcı Oturum**: OAuth token'larını yerel dosyada saklayarak sunucu kapansa bile oturumu korur.
 
-## Setup
+## Kurulum ve Yapılandırma
 
-### 1. Create a Spotify Developer App
-1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Create a new app.
-3. In the app settings, add a **Redirect URI**: `http://localhost:3000/callback` (or your deployed URL).
-4. Note your **Client ID** and **Client Secret**.
+### Ortak Adımlar
+1. [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) üzerinden bir uygulama oluşturun.
+2. Uygulama ayarlarından bir **Redirect URI** ekleyin: `http://localhost:3000/callback` (veya sunucu adresiniz).
+3. **Client ID** ve **Client Secret** değerlerini not edin.
 
-### 2. Environment Variables
-Create a `.env` file with:
-```env
-SPOTIFY_CLIENT_ID=your_client_id
-SPOTIFY_CLIENT_SECRET=your_client_secret
-REDIRECT_URI=http://localhost:3000/callback
-PORT=3000
-```
+---
 
-### 3. Install & Run
-```bash
-npm install
-npm start
-```
+### Yol A: Yerel Kurulum (Debian, Homebridge, macOS, Windows)
+Yerel ağda, 100% özel ve hızlı kullanım için idealdir.
 
-### 4. Authenticate
-Visit `http://localhost:3000/login` in your browser to link your Spotify account.
+1. **Repoyu indirin ve bağımlılıkları kurun:**
+   ```bash
+   git clone https://github.com/brsbrkctn/spotify-mcp.git
+   cd spotify-mcp
+   npm install
+   ```
 
-## MCP Usage
-- SSE Endpoint: `/sse`
-- Messages Endpoint: `/messages`
+2. **`.env` dosyasını oluşturun:**
+   ```env
+   SPOTIFY_CLIENT_ID=your_id
+   SPOTIFY_CLIENT_SECRET=your_secret
+   REDIRECT_URI=http://localhost:3000/callback
+   PORT=3000
+   ```
 
-## Security & Multi-User Deployment
+3. **Çalıştırın:**
+   `npm start` veya kalıcı çalışma için `pm2 start index.js --name spotify-mcp`.
 
-### Single-User Deployment (Local/Personal)
-Running this server locally or on a private personal hosting instance (e.g., Render, Railway) is safe. The server communicates directly with Spotify and manages a single user's credentials in-memory, ensuring your data remains isolated to your instance.
+4. **Yetkilendirin:** Tarayıcıdan `http://localhost:3000/login` adresine gidin.
 
-### Multi-User Shared Deployment Warning
-**Do not deploy a single shared instance for multiple users.** This server is designed for personal use; it uses global in-memory variables to store token states. If multiple users connect to the same central URL, their sessions will collide, and credentials will be overwritten. Secure multi-tenant use would require integrating a database and session management.
+---
 
-### Best Practices
-- **Environment Safety**: Keep your `.env` file secure and never commit it to version control.
-- **Access Control**: Use authorization tokens for any private endpoints if the server is exposed to the web.
-- **Logging**: Ensure intermediate logs do not leak sensitive token data or personal information.
+### Yol B: Uzak Sunucu Kurulumu (Render, Railway, Fly.io)
+AI araçları (ChatGPT, Cursor) ile her yerden erişmek için idealdir.
 
-## Tools
+1. **Güvenlik (API_KEY):** Sunucunuz internete açık olacağı için mutlaka bir `API_KEY` belirleyin.
+2. **Environment Variables:**
+   - `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `REDIRECT_URI`
+   - `API_KEY`: Karmaşık bir şifre belirleyin (örn: `benim_gizli_anahtarim_123`).
+3. **Bağlantı (AI Client):** AI istemcinizde (Cursor/ChatGPT) sunucu URL'sini eklerken şu header'ı kullanın:
+   - Header: `Authorization: Bearer <API_KEY>` veya `x-api-key: <API_KEY>`.
 
-### Playback
-- `get_current_track`: Returns currently playing track info.
-- `play_pause`: Toggle playback (`action`: "play" or "pause").
-- `set_volume`: Set volume (`volume_percent`: 0-100).
-- `get_playback_state`: Full playback details.
-- `skip_to_next`: Skip to the next track.
-- `skip_to_previous`: Skip to the previous track.
-- `get_available_devices`: List active/available devices.
-- `transfer_playback`: Transfer playback to a device (`deviceId`, `play`).
-- `set_shuffle_state`: Toggle shuffle (`state`: boolean).
-- `set_repeat_mode`: Set repeat mode (`state`: "track", "context", or "off").
-- `add_to_queue`: Add a track to the queue (`uri`).
-- `get_queue`: Get current queue and playing track.
+*Not: Ücretsiz sunucu katmanlarında (ephemeral storage) dosya sistemi geçicidir. Sunucu uyku moduna girip uyanırsa tekrar login olmanız gerekebilir.*
 
-### Playlists
-- `create_playlist`: Create a playlist (`name`, `description`, `public`).
-- `add_to_playlist`: Add tracks to playlist (`playlistId`, `trackUris`).
-- `get_user_playlists`: List your playlists (`limit`, `offset`).
-- `remove_from_playlist`: Remove tracks from a playlist (`playlistId`, `trackUris`).
+---
 
-### Search & Discovery
-- `search`: Search Spotify (`query`, `type`, `limit`).
-- `get_recommendations`: Get track suggestions (`seed_artists`, `seed_genres`, `seed_tracks`, `limit`).
+## Değişkenler (Environment Variables)
 
-### Library (Liked Songs)
-- `get_liked_songs`: List your saved tracks (`limit`, `offset`).
-- `save_tracks`: Like/save tracks (`trackUris`).
-- `remove_saved_tracks`: Unlike/unsave tracks (`trackUris`).
+| Değişken | Açıklama | Zorunlu mu? |
+| :--- | :--- | :--- |
+| `PORT` | Sunucunun çalışacağı port (Varsayılan: 3000). | Hayır |
+| `SPOTIFY_CLIENT_ID` | Spotify Developer App Client ID. | Evet |
+| `SPOTIFY_CLIENT_SECRET` | Spotify Developer App Client Secret. | Evet |
+| `REDIRECT_URI` | Spotify OAuth Redirect URI. | Evet |
+| `API_KEY` | Uzak erişim için güvenlik anahtarı. | Uzak kurulumda Evet |
+
+## Araçlar (Tools)
+
+- **Playback**: `get_current_track`, `play_pause`, `set_volume`, `skip_to_next`, `set_shuffle_state`, vb.
+- **Playlists**: `create_playlist`, `add_to_playlist`, `get_user_playlists`.
+- **Discovery**: `search`, `get_recommendations`.
+- **Library**: `get_liked_songs`, `save_tracks`.

@@ -24,6 +24,24 @@ app.use(express.json());
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/callback";
+const API_KEY = process.env.API_KEY;
+
+// Security Middleware
+const authMiddleware = (req, res, next) => {
+  if (!API_KEY) {
+    return next();
+  }
+
+  const authHeader = req.headers["authorization"];
+  const xApiKey = req.headers["x-api-key"];
+  const token = authHeader ? authHeader.split(" ")[1] : xApiKey;
+
+  if (token === API_KEY) {
+    next();
+  } else {
+    res.status(401).json({ error: "Unauthorized: Invalid API Key" });
+  }
+};
 
 // Token storage
 let userTokens = {
@@ -56,8 +74,13 @@ const saveTokens = (tokens) => {
     ...tokens,
     expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : userTokens.expires_at,
   };
-  fs.writeFileSync(TOKEN_PATH, JSON.stringify(userTokens, null, 2));
-  console.log("Tokens saved to local file.");
+  
+  try {
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(userTokens, null, 2));
+    console.log("Tokens saved to local file.");
+  } catch (error) {
+    console.warn("Warning: Could not write tokens to disk (expected in read-only environments):", error.message);
+  }
 };
 
 const refreshAccessToken = async () => {
@@ -520,12 +543,12 @@ app.get("/callback", async (req, res) => {
 
 // MCP SSE Endpoints
 let transport;
-app.get("/sse", async (req, res) => {
+app.get("/sse", authMiddleware, async (req, res) => {
   transport = new SSEServerTransport("/messages", res);
   await server.connect(transport);
 });
 
-app.post("/messages", async (req, res) => {
+app.post("/messages", authMiddleware, async (req, res) => {
   if (transport) {
     await transport.handlePostMessage(req, res);
   } else {
