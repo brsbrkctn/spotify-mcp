@@ -8,6 +8,7 @@ A robust Node.js/Express Model Context Protocol (MCP) server for Spotify, utiliz
 - **Play/Pause**: Control playback.
 - **Set Volume**: Adjust volume levels.
 - **Get Playback State**: Full status of your Spotify player.
+- **Playlist Management**: Create playlists, add tracks, and list user playlists.
 - **OAuth Integration**: Built-in flow to authenticate with Spotify.
 
 ## Setup
@@ -39,3 +40,16 @@ Visit `http://localhost:3000/login` in your browser to link your Spotify account
 ## MCP Usage
 - SSE Endpoint: `/sse`
 - Messages Endpoint: `/messages`
+
+## Tools
+
+### Playback
+- `get_current_track`: Returns currently playing track info.
+- `play_pause`: Toggle playback (`action`: "play" or "pause").
+- `set_volume`: Set volume (`volume_percent`: 0-100).
+- `get_playback_state`: Full playback details.
+
+### Playlists
+- `create_playlist`: Create a playlist (`name`, `description`, `public`).
+- `add_to_playlist`: Add tracks to playlist (`playlistId`, `trackUris`).
+- `get_user_playlists`: List your playlists (`limit`, `offset`).

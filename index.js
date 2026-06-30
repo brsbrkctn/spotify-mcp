@@ -72,6 +72,46 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description: "Get information about the current playback state",
         inputSchema: { type: "object", properties: {} },
       },
+      {
+        name: "create_playlist",
+        description: "Create a new playlist for the user",
+        inputSchema: {
+          type: "object",
+          properties: {
+            name: { type: "string", description: "The name of the playlist" },
+            description: { type: "string", description: "The description of the playlist" },
+            public: { type: "boolean", description: "Whether the playlist should be public" },
+          },
+          required: ["name"],
+        },
+      },
+      {
+        name: "add_to_playlist",
+        description: "Add tracks to a playlist",
+        inputSchema: {
+          type: "object",
+          properties: {
+            playlistId: { type: "string", description: "The ID of the playlist" },
+            trackUris: { 
+              type: "array", 
+              items: { type: "string" }, 
+              description: "Array of Spotify track URIs (e.g. spotify:track:4iV5W9uYzb7p7MnST7sCZZ)" 
+            },
+          },
+          required: ["playlistId", "trackUris"],
+        },
+      },
+      {
+        name: "get_user_playlists",
+        description: "Get the current user's playlists",
+        inputSchema: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+            offset: { type: "integer", minimum: 0, default: 0 },
+          },
+        },
+      },
     ],
   };
 });
@@ -108,6 +148,31 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const response = await spotifyApi.get("/me/player");
         return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
       }
+      case "create_playlist": {
+        const userResponse = await spotifyApi.get("/me");
+        const userId = userResponse.data.id;
+        const response = await spotifyApi.post(`/users/${userId}/playlists`, {
+          name: args.name,
+          description: args.description,
+          public: args.public !== undefined ? args.public : true,
+        });
+        return { content: [{ type: "text", text: `Playlist created: ${response.data.name} (ID: ${response.data.id})` }] };
+      }
+      case "add_to_playlist": {
+        await spotifyApi.post(`/playlists/${args.playlistId}/tracks`, {
+          uris: args.trackUris,
+        });
+        return { content: [{ type: "text", text: `Added ${args.trackUris.length} tracks to playlist.` }] };
+      }
+      case "get_user_playlists": {
+        const response = await spotifyApi.get("/me/playlists", {
+          params: {
+            limit: args.limit || 20,
+            offset: args.offset || 0,
+          },
+        });
+        return { content: [{ type: "text", text: JSON.stringify(response.data) }] };
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -121,7 +186,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Spotify Auth Endpoints
 app.get("/login", (req, res) => {
-  const scopes = "user-read-currently-playing user-modify-playback-state user-read-playback-state";
+  const scopes = "user-read-currently-playing user-modify-playback-state user-read-playback-state playlist-modify-public playlist-modify-private playlist-read-private";
   res.redirect(
     `https://accounts.spotify.com/authorize?response_type=code&client_id=${SPOTIFY_CLIENT_ID}&scope=${encodeURIComponent(
       scopes
