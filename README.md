@@ -45,6 +45,19 @@ Visit `http://localhost:3000/login` in your browser to link your Spotify account
 - SSE Endpoint: `/sse`
 - Messages Endpoint: `/messages`
 
+## Security & Multi-User Deployment
+
+### Single-User Deployment (Local/Personal)
+Running this server locally or on a private personal hosting instance (e.g., Render, Railway) is safe. The server communicates directly with Spotify and manages a single user's credentials in-memory, ensuring your data remains isolated to your instance.
+
+### Multi-User Shared Deployment Warning
+**Do not deploy a single shared instance for multiple users.** This server is designed for personal use; it uses global in-memory variables to store token states. If multiple users connect to the same central URL, their sessions will collide, and credentials will be overwritten. Secure multi-tenant use would require integrating a database and session management.
+
+### Best Practices
+- **Environment Safety**: Keep your `.env` file secure and never commit it to version control.
+- **Access Control**: Use authorization tokens for any private endpoints if the server is exposed to the web.
+- **Logging**: Ensure intermediate logs do not leak sensitive token data or personal information.
+
 ## Tools
 
 ### Playback
