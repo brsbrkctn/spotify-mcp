@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.5",
+    version: "1.3.6",
   },
   {
     capabilities: {
@@ -471,7 +471,7 @@ app.get("/callback", async (req, res) => {
 
 // SSE Transport
 let transport;
-app.get("/sse", authMiddleware, async (req, res) => {
+app.get("/mcp", authMiddleware, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
 
   transport = new SSEServerTransport("/messages", res);
@@ -512,7 +512,7 @@ const startServer = async () => {
       if (useStdio) {
         log(`[Spotify MCP] OAuth callback will be handled at ${REDIRECT_URI}. Run oauth authentication by visiting http://localhost:${PORT}/login`);
       } else {
-        log(`[Spotify MCP] You can connect clients via SSE at http://localhost:${PORT}/sse`);
+        log(`[Spotify MCP] You can connect clients via SSE at http://localhost:${PORT}/mcp`);
       }
 
       // Load tokens in background after server starts listening
