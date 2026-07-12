@@ -108,6 +108,30 @@ Recommended for accessing your home Spotify setup from anywhere via cloud platfo
 - **Single-User Architecture**: Designed as a private, single-tenant instance. Do not deploy a single shared instance for multiple users as session state is handled globally.
 - **Stdio-Safe Logging**: When running in `--stdio` mode, the server redirects all application logs to `stderr` to keep `stdout` clean for JSON-RPC messages.
 
+## Cloud Deployment & SSE Troubleshooting
+
+If you are deploying this server to cloud platforms (like Render, Railway, or Vercel) and connecting web-based AI clients (like Poke.ai or custom agents), you might encounter standard SSE integration issues. This codebase implements several mitigations for common pitfalls:
+
+### 1. 502 Bad Gateway / Port Binding Timeouts (Cold Starts)
+* **Problem**: Free tier cloud hosts (e.g., Render) put containers to sleep. On wake-up, the container has ~30s to bind to `$PORT`. If the server blocks startup on external network requests (like database fetches), the host kills the container with a 502 Bad Gateway.
+* **Solution**: This server implements **non-blocking port binding**. The Express port is bound instantly, and the initialization checks (loading database tokens) run in the background.
+
+### 2. Client Timeouts during JSON-RPC (Hanging Connections)
+* **Problem**: Setting global Express middleware like `app.use(express.json())` parses request bodies but consumes the raw request stream. When the MCP SDK tries to read the stream again via `getRawBody()`, the connection hangs indefinitely.
+* **Solution**: This server passes the pre-parsed `req.body` directly to `transport.handlePostMessage()`, preventing stream consumption hangs.
+
+### 3. "Already connected to a transport" Crashes
+* **Problem**: If an AI client disconnects and reconnects (or page refreshes), calling `server.connect()` on an already connected server instance causes the MCP SDK to crash the Node process.
+* **Solution**: The `/mcp` route detects existing transport connections, safely terminates them (`transport.close()`), and resets the internal server transport state to allow instant reconnection.
+
+### 4. Custom Header Limitations
+* **Problem**: Browser-based `EventSource` calls cannot send custom headers (like `Authorization` or `x-api-key`).
+* **Solution**: The auth middleware accepts API key validation via query parameters (e.g., `/mcp?api_key=your_key`) for transport handshakes.
+
+### 5. Nginx/Cloudflare Buffering
+* **Problem**: Reverse proxies buffer the HTTP response, preventing the real-time SSE stream from trickling down.
+* **Solution**: The server injects the `X-Accel-Buffering: no` header to instruct proxies to disable stream buffering.
+
 ## Contributing
 Contributions are welcome via forks and pull requests.
 
