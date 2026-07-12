@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.7",
+    version: "1.3.8",
   },
   {
     capabilities: {
@@ -492,7 +492,7 @@ app.get("/mcp", authMiddleware, async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   if (transport) {
-    await transport.handlePostMessage(req, res);
+    await transport.handlePostMessage(req, res, req.body);
   } else {
     res.status(400).send("No active SSE transport.");
   }

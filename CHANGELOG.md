@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.8] - 2026-07-12
+
+### Fixed
+- **POST /messages Stream Consumption (Hanging Connection)**: Fixed a bug where incoming requests to `/messages` hung indefinitely and caused connection timeouts in clients (like Poke.ai). Enforcing `express.json()` globally consumed the request stream before the MCP SDK could read it via `getRawBody()`. Resolved by passing the already parsed `req.body` as the third parameter to `transport.handlePostMessage()`, bypassing raw body stream reading.
+
 ## [1.3.7] - 2026-07-12
 
 ### Fixed
