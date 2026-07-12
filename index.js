@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.0",
+    version: "1.5.1",
   },
   {
     capabilities: {
@@ -385,10 +385,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Filter out null or incomplete track entries strictly (using item.item for /items endpoint)
         const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
         const mappedItems = validItems.map(item => ({
-          ...item,
-          track: item.item // compatibility layer for clients expecting item.track
+          added_at: item.added_at,
+          item: {
+            id: item.item.id,
+            name: item.item.name,
+            uri: item.item.uri,
+            type: item.item.type,
+            artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+          },
+          track: {
+            id: item.item.id,
+            name: item.item.name,
+            uri: item.item.uri,
+            type: item.item.type,
+            artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+          }
         }));
-        log(`[Tool] Filtering complete. Total fetched: ${allItems.length}, Valid: ${mappedItems.length}`);
+        log(`[Tool] Filtering and payload simplification complete. Total fetched: ${allItems.length}, Valid/Simplified: ${mappedItems.length}`);
         
         return {
           content: [{
@@ -578,14 +591,31 @@ app.get("/debug", async (req, res) => {
       }
 
       const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
+      const mappedItems = validItems.map(item => ({
+        added_at: item.added_at,
+        item: {
+          id: item.item.id,
+          name: item.item.name,
+          uri: item.item.uri,
+          type: item.item.type,
+          artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+        },
+        track: {
+          id: item.item.id,
+          name: item.item.name,
+          uri: item.item.uri,
+          type: item.item.type,
+          artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+        }
+      }));
       testFetch = {
         totalFetched: allItems.length,
-        validCount: validItems.length,
-        firstItemRaw: allItems[0],
-        firstThreeTracks: validItems.slice(0, 3).map(item => ({
-          name: item.item?.name,
-          artist: item.item?.artists?.[0]?.name,
-          uri: item.item?.uri
+        validCount: mappedItems.length,
+        firstItemRaw: mappedItems[0],
+        firstThreeTracks: mappedItems.slice(0, 3).map(item => ({
+          name: item.track?.name,
+          artist: item.track?.artists?.[0]?.name,
+          uri: item.track?.uri
         }))
       };
     } catch (te) {

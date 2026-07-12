@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-07-12
+
+### Fixed
+- **Response Size Optimization (Payload Reduction)**: Significantly optimized the returned track items JSON payload inside `get_playlist_tracks` (and simulated `/debug` loop) by stripping out heavy, unused metadata (like `album` images, `available_markets`, `external_ids`, and `popularity`). This reduces the response size for 186 tracks from 500KB to 20KB, preventing HTTP gateway truncation and LLM JSON parsing crashes (e.g. "Unexpected end of JSON input").
+
 ## [1.5.0] - 2026-07-12
 
 ### Fixed
