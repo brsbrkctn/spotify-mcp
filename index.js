@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.3",
+    version: "1.3.4",
   },
   {
     capabilities: {
@@ -482,7 +482,7 @@ app.get("/sse", authMiddleware, async (req, res) => {
   await server.connect(transport);
 });
 
-app.post("/messages", authMiddleware, async (req, res) => {
+app.post("/messages", async (req, res) => {
   if (transport) {
     await transport.handlePostMessage(req, res);
   } else {
