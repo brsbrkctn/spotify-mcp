@@ -57,7 +57,8 @@ const authMiddleware = (req, res, next) => {
 
   const authHeader = req.headers["authorization"];
   const xApiKey = req.headers["x-api-key"];
-  const providedKey = xApiKey || (authHeader ? (authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader) : null);
+  const queryApiKey = req.query.api_key || req.query.apiKey || req.query.token;
+  const providedKey = xApiKey || queryApiKey || (authHeader ? (authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader) : null);
 
   if (providedKey === API_KEY) {
     next();
@@ -233,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.0",
+    version: "1.3.1",
   },
   {
     capabilities: {
