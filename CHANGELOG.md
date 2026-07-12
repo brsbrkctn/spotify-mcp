@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2026-07-12
+
+### Fixed
+- **Spotify API /items Endpoint Migration**: Updated playlist modification and retrieval endpoints from `/tracks` to `/items` (e.g. `POST /playlists/{id}/items`, `GET /playlists/{id}/items`, `DELETE /playlists/{id}/items`). Spotify's February 2026 API changes deprecated and removed the legacy `/tracks` paths for Development Mode apps, causing all playlist reads/writes to return 403 Forbidden.
+
 ## [1.4.2] - 2026-07-12
 
 ### Added
