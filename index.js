@@ -143,6 +143,7 @@ const saveTokens = async (tokens) => {
   userTokens = {
     ...userTokens,
     ...tokens,
+    refresh_token: tokens.refresh_token || userTokens.refresh_token,
     expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : userTokens.expires_at,
   };
 
@@ -234,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.9",
+    version: "1.4.0",
   },
   {
     capabilities: {
