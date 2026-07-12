@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.6",
+    version: "1.3.7",
   },
   {
     capabilities: {
@@ -473,6 +473,18 @@ app.get("/callback", async (req, res) => {
 let transport;
 app.get("/mcp", authMiddleware, async (req, res) => {
   res.setHeader("X-Accel-Buffering", "no");
+
+  if (transport) {
+    log("[SSE] Closing existing transport connection...");
+    try {
+      await transport.close();
+    } catch (err) {
+      log("[SSE] Error closing existing transport:", err.message);
+    }
+  }
+
+  // Force reset server transport state to allow new connection
+  server._transport = undefined;
 
   transport = new SSEServerTransport("/messages", res);
   await server.connect(transport);

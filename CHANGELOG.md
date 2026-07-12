@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.7] - 2026-07-12
+
+### Fixed
+- **Reconnection State Reset**: Fixed a crash occurring when a client refreshed the connection or reconnected. The MCP `Server` instance threw an `Already connected to a transport` error and crashed because the previous transport was not closed, and the server's internal `_transport` reference was not cleared. Resolved by closing the previous transport and resetting `server._transport = undefined` when a new GET request is made to `/mcp`.
+
 ## [1.3.6] - 2026-07-12
 
 ### Changed
