@@ -27,6 +27,10 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/callback";
 const API_KEY = process.env.API_KEY;
 
+// Supabase environment variables (supports standard and next-public names)
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
 // Check if stdio mode is requested via command line argument or environment variable
 const useStdio = process.argv.includes("--stdio") || process.env.TRANSPORT === "stdio";
 
@@ -70,10 +74,47 @@ let userTokens = {
 };
 
 /**
- * Loads tokens from local disk if available.
+ * Loads tokens from Supabase or local disk if available.
  * Fails gracefully in diskless/read-only environments.
  */
 const loadTokens = async () => {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      log("[Auth] Connecting to Supabase to load tokens...");
+      const response = await axios.get(`${SUPABASE_URL}/rest/v1/spotify_auth`, {
+        params: { id: "eq.session" },
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      });
+
+      if (response.data && response.data.length > 0) {
+        const row = response.data[0];
+        userTokens = {
+          access_token: row.access_token,
+          refresh_token: row.refresh_token,
+          expires_at: row.expires_at ? Number(row.expires_at) : null,
+        };
+        log("[Auth] Tokens loaded from Supabase.");
+        
+        if (userTokens.refresh_token && (!userTokens.expires_at || Date.now() > userTokens.expires_at)) {
+          try {
+            await refreshAccessToken();
+          } catch (refreshErr) {
+            console.warn("[Auth] Initial token refresh failed, will retry on request:", refreshErr.message);
+          }
+        }
+        return;
+      } else {
+        log("[Auth] No session found in Supabase. A new one will be created upon login.");
+      }
+    } catch (error) {
+      console.warn("[Auth] Could not load tokens from Supabase, falling back to local file:", error.response?.data || error.message);
+    }
+  }
+
+  // Local file fallback
   try {
     if (fs.existsSync(TOKEN_PATH)) {
       const data = JSON.parse(fs.readFileSync(TOKEN_PATH, "utf8"));
@@ -94,16 +135,45 @@ const loadTokens = async () => {
 };
 
 /**
- * Persists tokens to disk.
+ * Persists tokens to Supabase or disk.
  * Handles read-only file systems without crashing.
  */
-const saveTokens = (tokens) => {
+const saveTokens = async (tokens) => {
   userTokens = {
     ...userTokens,
     ...tokens,
     expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : userTokens.expires_at,
   };
+
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      log("[Auth] Saving tokens to Supabase...");
+      await axios.post(
+        `${SUPABASE_URL}/rest/v1/spotify_auth`,
+        {
+          id: "session",
+          access_token: userTokens.access_token,
+          refresh_token: userTokens.refresh_token,
+          expires_at: userTokens.expires_at,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          headers: {
+            apikey: SUPABASE_ANON_KEY,
+            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "resolution=merge-duplicates", // Upsert behavior in PostgREST
+          },
+        }
+      );
+      log("[Auth] Session persisted to Supabase.");
+      return;
+    } catch (error) {
+      console.warn("[Auth] Failed to persist session to Supabase, falling back to local file:", error.response?.data || error.message);
+    }
+  }
   
+  // Local file fallback
   try {
     fs.writeFileSync(TOKEN_PATH, JSON.stringify(userTokens, null, 2));
     log("[Auth] Session persisted to disk.");
@@ -132,7 +202,7 @@ const refreshAccessToken = async () => {
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     
-    saveTokens(response.data);
+    await saveTokens(response.data);
     log("[Auth] Access token refreshed successfully.");
   } catch (error) {
     const errorData = error.response?.data || error.message;
@@ -163,7 +233,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.2.0",
+    version: "1.3.0",
   },
   {
     capabilities: {
@@ -391,7 +461,7 @@ app.get("/callback", async (req, res) => {
       client_secret: SPOTIFY_CLIENT_SECRET,
     }), { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
     
-    saveTokens(response.data);
+    await saveTokens(response.data);
     res.send("<h1>Authenticated Successfully</h1><p>You can close this window and start using the Spotify MCP.</p>");
   } catch (error) {
     res.status(500).send("Authentication failed");

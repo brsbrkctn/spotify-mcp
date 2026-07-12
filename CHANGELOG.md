@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-07-12
+
+### Added
+- **Supabase Integration**: Added support for persisting Spotify OAuth credentials to a Supabase database. This solves the token expiration issue on ephemeral/diskless hosting platforms like Vercel.
+- **Dynamic Dual-Storage (Fallback)**: The server automatically detects if `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables are set. If present, it uses Supabase REST endpoints for state persistence. If absent, it transparently falls back to using the local `.spotify-tokens.json` file on disk.
+
 ## [1.2.0] - 2026-07-12
 
 ### Added
