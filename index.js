@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.9",
+    version: "1.5.0",
   },
   {
     capabilities: {
@@ -382,14 +382,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
         }
 
-        // Filter out null or incomplete track entries strictly
-        const validItems = allItems.filter(item => item && item.track && item.track.id && item.track.uri);
-        log(`[Tool] Filtering complete. Total fetched: ${allItems.length}, Valid: ${validItems.length}`);
+        // Filter out null or incomplete track entries strictly (using item.item for /items endpoint)
+        const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
+        const mappedItems = validItems.map(item => ({
+          ...item,
+          track: item.item // compatibility layer for clients expecting item.track
+        }));
+        log(`[Tool] Filtering complete. Total fetched: ${allItems.length}, Valid: ${mappedItems.length}`);
         
         return {
           content: [{
             type: "text",
-            text: JSON.stringify({ items: validItems, total: validItems.length })
+            text: JSON.stringify({ items: mappedItems, total: mappedItems.length })
           }]
         };
       }
@@ -573,15 +577,15 @@ app.get("/debug", async (req, res) => {
         }
       }
 
-      const validItems = allItems.filter(item => item && item.track && item.track.id && item.track.uri);
+      const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
       testFetch = {
         totalFetched: allItems.length,
         validCount: validItems.length,
         firstItemRaw: allItems[0],
         firstThreeTracks: validItems.slice(0, 3).map(item => ({
-          name: item.track?.name,
-          artist: item.track?.artists?.[0]?.name,
-          uri: item.track?.uri
+          name: item.item?.name,
+          artist: item.item?.artists?.[0]?.name,
+          uri: item.item?.uri
         }))
       };
     } catch (te) {

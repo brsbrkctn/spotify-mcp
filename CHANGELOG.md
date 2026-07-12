@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-07-12
+
+### Fixed
+- **Spotify API /items Response Schema Alignment**: Modified `get_playlist_tracks` to parse track details from the new `"item"` key instead of the legacy `"track"` key. In Spotify's February 2026 `/items` API response, playlist tracks are returned under the `"item"` key, which caused the strict validation filter to drop all tracks (returning 0 songs).
+- **Backward Compatibility Map**: Added a mapping layer to duplicate track details under both the new `"item"` and legacy `"track"` keys inside the returned items array. This ensures full compatibility with older LLM clients that are hardcoded to look for the `"track"` key.
+
 ## [1.4.9] - 2026-07-12
 
 ### Added
