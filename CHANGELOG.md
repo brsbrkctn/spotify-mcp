@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-07-12
+
+### Added
+- **Playlist Pagination Descriptions**: Added detailed parameter descriptions, minimums, maximums, and default values for `limit` and `offset` in the `get_playlist_tracks` tool schema. This guides AI models (like ChatGPT) to successfully paginate and read playlists with more than 100 tracks.
+
 ## [1.4.3] - 2026-07-12
 
 ### Fixed

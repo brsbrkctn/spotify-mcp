@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.3",
+    version: "1.4.4",
   },
   {
     capabilities: {
@@ -255,7 +255,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       { name: "create_playlist", description: "Create a new playlist", inputSchema: { type: "object", properties: { name: { type: "string" }, description: { type: "string" }, public: { type: "boolean" } }, required: ["name"] } },
       { name: "add_to_playlist", description: "Add tracks to a playlist", inputSchema: { type: "object", properties: { playlistId: { type: "string" }, trackUris: { type: "array", items: { type: "string" } } }, required: ["playlistId", "trackUris"] } },
       { name: "get_user_playlists", description: "List user playlists", inputSchema: { type: "object", properties: { limit: { type: "integer" }, offset: { type: "integer" } } } },
-      { name: "get_playlist_tracks", description: "Get tracks from a playlist", inputSchema: { type: "object", properties: { playlistId: { type: "string" }, limit: { type: "integer" }, offset: { type: "integer" } }, required: ["playlistId"] } },
+      { 
+        name: "get_playlist_tracks", 
+        description: "Get tracks/items from a playlist (supports pagination)", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            playlistId: { type: "string", description: "The Spotify ID of the playlist" }, 
+            limit: { type: "integer", minimum: 1, maximum: 100, default: 20, description: "The maximum number of tracks to return (max 100)" }, 
+            offset: { type: "integer", minimum: 0, default: 0, description: "The index of the first track to return (use for pagination, e.g., 100 to get the next page)" } 
+          }, 
+          required: ["playlistId"] 
+        } 
+      },
       { 
         name: "search", 
         description: "Search Spotify content", 

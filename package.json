@@ -1,6 +1,6 @@
 {
   "name": "spotify-mcp",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Spotify Model Context Protocol Server",
   "main": "index.js",
   "type": "module",
