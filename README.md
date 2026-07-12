@@ -71,7 +71,7 @@ Recommended for users who want local network control via SSE (e.g. for browser e
 1. **Configure `.env`** as in Path A.
 2. **Run**: `npm start`.
 3. Open `http://localhost:3000/login` to authenticate.
-4. Session tokens are persisted to `.spotify-tokens.json` to survive restarts. Clients can connect to SSE at `http://localhost:3000/sse`.
+4. Session tokens are persisted to `.spotify-tokens.json` to survive restarts. Clients can connect to SSE at `http://localhost:3000/mcp`.
 
 ---
 
@@ -83,8 +83,9 @@ Recommended for accessing your home Spotify setup from anywhere via cloud platfo
    - Set standard Spotify credentials.
    - Set `API_KEY=your_complex_secret_key`.
 3. **Vercel Serverless Support**: This codebase includes a default export of the Express application and bypasses `app.listen()` when deployed to Vercel, making it fully serverless-ready.
-4. **Client Configuration**: When connecting your AI client, add the following header:
-   - `Authorization: Bearer your_complex_secret_key` (or `x-api-key: your_complex_secret_key`)
+4. **Client Configuration**: When connecting your AI client:
+   - Using headers: Pass `Authorization: Bearer your_complex_secret_key` (or `x-api-key: your_complex_secret_key`).
+   - Using query string (recommended for clients that do not propagate headers on handshake or reconnects like Poke.ai): Connect via `https://your-mcp-domain.onrender.com/mcp?api_key=your_complex_secret_key`.
 
 ---
 

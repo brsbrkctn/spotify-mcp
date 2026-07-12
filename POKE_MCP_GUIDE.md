@@ -65,7 +65,7 @@ Bulut tabanlı AI istemcilerine (Poke.ai vb.) bağlantı kurulurken girilmesi ge
 
 * **Name**: `spotify-mcp` (Herhangi bir isim)
 * **Server URL**: SSE tünelinizin adresi ve şifrenizin URL parametresi olarak birleşimi:
-  `https://spotify-mcp-si6r.onrender.com/mcp?api_key=GİZLİ_ŞİFRENİZ`
+  `https://your-mcp-server.onrender.com/mcp?api_key=GİZLİ_ŞİFRENİZ`
 * **API Key (optional)**: `GİZLİ_ŞİFRENİZ`
 
 *(Uzantının `/sse` yerine `/mcp` olması, bazı proxy ve güvenlik duvarlarının filtrelerine takılmayı engeller).*
