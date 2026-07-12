@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.5",
+    version: "1.4.6",
   },
   {
     capabilities: {
@@ -361,6 +361,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       case "get_playlist_tracks": {
         const tracks = await api.get(`/playlists/${args.playlistId}/items`, { params: { limit: args.limit || 20, offset: args.offset || 0 } });
+        if (tracks.data && Array.isArray(tracks.data.items)) {
+          tracks.data.items = tracks.data.items.filter(item => item && item.track !== null);
+        }
         return { content: [{ type: "text", text: JSON.stringify(tracks.data) }] };
       }
       case "search": {
