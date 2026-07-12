@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.1",
+    version: "1.3.2",
   },
   {
     capabilities: {
@@ -472,6 +472,12 @@ app.get("/callback", async (req, res) => {
 // SSE Transport
 let transport;
 app.get("/sse", authMiddleware, async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
   transport = new SSEServerTransport("/messages", res);
   await server.connect(transport);
 });
