@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.8] - 2026-07-12
+
+### Fixed
+- **Robust Playlist Tracks Fetching**: Refactored `get_playlist_tracks` to always fetch all playlist tracks from index 0 up to 500, ignoring potential client-side parameters like `limit: null` or `offset: null` that were coerced by ChatGPT's Custom Action manager. This resolves the empty results (`items: [], total: 0`) bug and adds detailed server-side logs to trace pagination progress.
+
 ## [1.4.7] - 2026-07-12
 
 ### Added

@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.7",
+    version: "1.4.8",
   },
   {
     capabilities: {
@@ -257,13 +257,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       { name: "get_user_playlists", description: "List user playlists", inputSchema: { type: "object", properties: { limit: { type: "integer" }, offset: { type: "integer" } } } },
       { 
         name: "get_playlist_tracks", 
-        description: "Get tracks/items from a playlist (automatically filters out invalid/null tracks and handles pagination in the background)", 
+        description: "Get all valid tracks/items from a playlist. Invalid, deleted, or null tracks are automatically filtered out on the server side. Pagination is handled automatically.", 
         inputSchema: { 
           type: "object", 
           properties: { 
-            playlistId: { type: "string", description: "The Spotify ID of the playlist" }, 
-            limit: { type: "integer", description: "Optional. Maximum number of tracks to return (defaults to fetching all tracks up to 500)" }, 
-            offset: { type: "integer", description: "Optional. Start index for fetching (defaults to 0)" } 
+            playlistId: { type: "string", description: "The Spotify ID of the playlist" }
           }, 
           required: ["playlistId"] 
         } 
@@ -360,18 +358,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(playlists.data) }] };
       }
       case "get_playlist_tracks": {
+        log(`[Tool] get_playlist_tracks called for playlist: ${args.playlistId}`);
         let allItems = [];
         let limit = 100;
-        let offset = args.offset !== undefined ? args.offset : 0;
-        let maxRequested = args.limit !== undefined ? args.limit : 500;
+        let offset = 0;
+        let maxRequested = 500;
         let hasNext = true;
 
         while (hasNext) {
+          log(`[Tool] Fetching playlist items page: offset=${offset}, limit=${limit}...`);
           const response = await api.get(`/playlists/${args.playlistId}/items`, {
-            params: { limit: Math.min(limit, maxRequested - allItems.length), offset }
+            params: { limit, offset }
           });
 
           const pageItems = response.data.items || [];
+          log(`[Tool] Fetched ${pageItems.length} items from Spotify.`);
           allItems.push(...pageItems);
 
           if (pageItems.length < limit || allItems.length >= maxRequested) {
@@ -383,6 +384,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         // Filter out null or incomplete track entries strictly
         const validItems = allItems.filter(item => item && item.track && item.track.id && item.track.uri);
+        log(`[Tool] Filtering complete. Total fetched: ${allItems.length}, Valid: ${validItems.length}`);
         
         return {
           content: [{
