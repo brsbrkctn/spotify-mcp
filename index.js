@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.2",
+    version: "1.3.3",
   },
   {
     capabilities: {
@@ -500,8 +500,6 @@ const startServer = async () => {
     console.warn("\x1b[33m[Spotify MCP] [Warning] SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET is not set in environment variables.\x1b[0m");
   }
 
-  await loadTokens();
-
   if (useStdio) {
     try {
       const stdioTransport = new StdioServerTransport();
@@ -520,7 +518,17 @@ const startServer = async () => {
       } else {
         log(`[Spotify MCP] You can connect clients via SSE at http://localhost:${PORT}/sse`);
       }
+
+      // Load tokens in background after server starts listening
+      loadTokens()
+        .then(() => log("[Auth] Tokens loaded successfully in background."))
+        .catch((err) => console.error("[Auth] Failed to load tokens in background:", err.message));
     });
+  } else {
+    // Vercel background load
+    loadTokens()
+      .then(() => log("[Auth] Tokens loaded successfully in background."))
+      .catch((err) => console.error("[Auth] Failed to load tokens in background:", err.message));
   }
 };
 
