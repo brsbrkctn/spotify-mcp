@@ -75,14 +75,17 @@ Recommended for users who want local network control via SSE (e.g. for browser e
 
 ---
 
-### Path C: Secured Remote Deployment (Cloud/Vercel)
+### Path C: Secured Remote Deployment (Render / Railway / Vercel)
 Recommended for accessing your home Spotify setup from anywhere via cloud platforms like Render, Railway, or Vercel.
+
+> [!TIP]
+> Persistent hosting providers like Render or Railway are highly recommended over Vercel's free serverless tier, as Vercel's 10-second serverless execution limit will cause connection timeouts on long-lived SSE streams.
 
 1. **Mandatory Security**: Set an `API_KEY` in your environment variables. The server will automatically enable authentication middleware.
 2. **Configure Variables**:
    - Set standard Spotify credentials.
    - Set `API_KEY=your_complex_secret_key`.
-3. **Vercel Serverless Support**: This codebase includes a default export of the Express application and bypasses `app.listen()` when deployed to Vercel, making it fully serverless-ready.
+3. **Cloud Support**: This codebase includes a default export of the Express application and bypasses `app.listen()` when deployed to Vercel, making it compatible with both serverless and persistent container environments.
 4. **Client Configuration**: When connecting your AI client:
    - Using headers: Pass `Authorization: Bearer your_complex_secret_key` (or `x-api-key: your_complex_secret_key`).
    - Using query string (recommended for clients that do not propagate headers on handshake or reconnects like Poke.ai): Connect via `https://your-mcp-domain.onrender.com/mcp?api_key=your_complex_secret_key`.
