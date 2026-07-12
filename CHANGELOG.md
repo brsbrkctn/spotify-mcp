@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.5] - 2026-07-12
+
+### Fixed
+- **SSE Handshake Crash (Headers Already Sent)**: Removed manual `res.flushHeaders()` and duplicate stream headers inside the `GET /sse` route. Calling `flushHeaders()` before `server.connect(transport)` sent response headers prematurely, causing Node.js to crash with an `ERR_HTTP_HEADERS_SENT` error when the MCP SDK attempted to invoke `writeHead()`. Keep-alive and Content-Type headers are now correctly managed by the SDK, while still custom-merging the `X-Accel-Buffering` configuration.
+
 ## [1.3.4] - 2026-07-12
 
 ### Fixed
