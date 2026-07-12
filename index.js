@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.6",
+    version: "1.4.7",
   },
   {
     capabilities: {
@@ -257,13 +257,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       { name: "get_user_playlists", description: "List user playlists", inputSchema: { type: "object", properties: { limit: { type: "integer" }, offset: { type: "integer" } } } },
       { 
         name: "get_playlist_tracks", 
-        description: "Get tracks/items from a playlist (supports pagination)", 
+        description: "Get tracks/items from a playlist (automatically filters out invalid/null tracks and handles pagination in the background)", 
         inputSchema: { 
           type: "object", 
           properties: { 
             playlistId: { type: "string", description: "The Spotify ID of the playlist" }, 
-            limit: { type: "integer", minimum: 1, maximum: 100, default: 20, description: "The maximum number of tracks to return (max 100)" }, 
-            offset: { type: "integer", minimum: 0, default: 0, description: "The index of the first track to return (use for pagination, e.g., 100 to get the next page)" } 
+            limit: { type: "integer", description: "Optional. Maximum number of tracks to return (defaults to fetching all tracks up to 500)" }, 
+            offset: { type: "integer", description: "Optional. Start index for fetching (defaults to 0)" } 
           }, 
           required: ["playlistId"] 
         } 
@@ -360,11 +360,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return { content: [{ type: "text", text: JSON.stringify(playlists.data) }] };
       }
       case "get_playlist_tracks": {
-        const tracks = await api.get(`/playlists/${args.playlistId}/items`, { params: { limit: args.limit || 20, offset: args.offset || 0 } });
-        if (tracks.data && Array.isArray(tracks.data.items)) {
-          tracks.data.items = tracks.data.items.filter(item => item && item.track !== null);
+        let allItems = [];
+        let limit = 100;
+        let offset = args.offset !== undefined ? args.offset : 0;
+        let maxRequested = args.limit !== undefined ? args.limit : 500;
+        let hasNext = true;
+
+        while (hasNext) {
+          const response = await api.get(`/playlists/${args.playlistId}/items`, {
+            params: { limit: Math.min(limit, maxRequested - allItems.length), offset }
+          });
+
+          const pageItems = response.data.items || [];
+          allItems.push(...pageItems);
+
+          if (pageItems.length < limit || allItems.length >= maxRequested) {
+            hasNext = false;
+          } else {
+            offset += limit;
+          }
         }
-        return { content: [{ type: "text", text: JSON.stringify(tracks.data) }] };
+
+        // Filter out null or incomplete track entries strictly
+        const validItems = allItems.filter(item => item && item.track && item.track.id && item.track.uri);
+        
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ items: validItems, total: validItems.length })
+          }]
+        };
       }
       case "search": {
         const results = await api.get("/search", { params: { q: args.query, type: args.type.join(","), limit: args.limit || 20 } });

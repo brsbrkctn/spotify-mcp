@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.7] - 2026-07-12
+
+### Added
+- **Automatic Background Pagination & Strict Filtering**: Implemented a background loop inside the `get_playlist_tracks` tool to automatically fetch all playlist tracks (up to 500 items) in a single call, strictly filtering out tracks missing valid IDs or URIs (`item.track.id` and `item.track.uri`). This resolves client-side pagination index shifting and duplication issues (fetching 250+ records on a 186-track list).
+
 ## [1.4.6] - 2026-07-12
 
 ### Added
