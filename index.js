@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.8",
+    version: "1.4.9",
   },
   {
     capabilities: {
@@ -549,10 +549,49 @@ app.get("/debug", async (req, res) => {
       playlistInfo = `Error fetching playlist: ${pe.response?.data?.error?.message || pe.message}`;
     }
 
-    // 3. Get token scopes from Spotify response headers
+    // 3. Test pagination & filtering like get_playlist_tracks
+    let testFetch = "Not tested";
+    try {
+      let allItems = [];
+      let limit = 100;
+      let offset = 0;
+      let maxRequested = 500;
+      let hasNext = true;
+
+      while (hasNext) {
+        const response = await api.get(`/playlists/${targetPlaylistId}/items`, {
+          params: { limit, offset }
+        });
+
+        const pageItems = response.data.items || [];
+        allItems.push(...pageItems);
+
+        if (pageItems.length < limit || allItems.length >= maxRequested) {
+          hasNext = false;
+        } else {
+          offset += limit;
+        }
+      }
+
+      const validItems = allItems.filter(item => item && item.track && item.track.id && item.track.uri);
+      testFetch = {
+        totalFetched: allItems.length,
+        validCount: validItems.length,
+        firstThreeTracks: validItems.slice(0, 3).map(item => ({
+          name: item.track.name,
+          artist: item.track.artists[0]?.name,
+          uri: item.track.uri
+        }))
+      };
+    } catch (te) {
+      testFetch = `Error during test fetch: ${te.response?.data?.error?.message || te.message}`;
+    }
+
+    // 4. Get token scopes from Spotify response headers
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
+      serverVersion: "1.4.9",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
@@ -561,7 +600,8 @@ app.get("/debug", async (req, res) => {
       },
       tokenScopes: scopes,
       targetPlaylist: playlistInfo,
-      match: me.data.id === playlistInfo.owner_id ? "MATCH (You own this playlist)" : "MISMATCH (You do NOT own this playlist!)"
+      match: me.data.id === playlistInfo.owner_id ? "MATCH (You own this playlist)" : "MISMATCH (You do NOT own this playlist!)",
+      testFetch
     });
   } catch (err) {
     res.status(500).json({

@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] - 2026-07-12
+
+### Added
+- **Diagnostic /debug Simulator**: Updated `/debug` endpoint to simulate the `get_playlist_tracks` pagination and filtering logic, displaying active server version and direct API results to help isolate why the client receives 0 tracks.
+
 ## [1.4.8] - 2026-07-12
 
 ### Fixed
