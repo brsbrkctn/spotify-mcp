@@ -596,7 +596,7 @@ app.get("/debug", async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.4.9",
+      serverVersion: "1.5.0",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
