@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.1",
+    version: "1.4.2",
   },
   {
     capabilities: {
@@ -474,6 +474,57 @@ app.get("/callback", async (req, res) => {
   } catch (error) {
     console.error("[Auth Callback Error]", error.response?.data || error.message);
     res.status(500).send(`Authentication failed: ${error.response?.data?.error_description || error.message}`);
+  }
+});
+
+app.get("/debug", async (req, res) => {
+  try {
+    if (!userTokens.access_token) {
+      return res.status(401).send("No active token. Please login first by visiting /login");
+    }
+
+    const api = axios.create({
+      baseURL: "https://api.spotify.com/v1",
+      headers: { Authorization: `Bearer ${userTokens.access_token}` },
+    });
+
+    // 1. Get user profile
+    const me = await api.get("/me");
+    
+    // 2. Get playlist details
+    let playlistInfo = "No playlist queried";
+    const targetPlaylistId = "3h6TRrs9qyIXAE2uuViaSn";
+    try {
+      const playlist = await api.get(`/playlists/${targetPlaylistId}`);
+      playlistInfo = {
+        name: playlist.data.name,
+        owner_id: playlist.data.owner.id,
+        owner_display_name: playlist.data.owner.display_name,
+        collaborative: playlist.data.collaborative,
+        public: playlist.data.public
+      };
+    } catch (pe) {
+      playlistInfo = `Error fetching playlist: ${pe.response?.data?.error?.message || pe.message}`;
+    }
+
+    // 3. Get token scopes from Spotify response headers
+    const scopes = me.headers["x-oauth-scopes"] || "unknown";
+
+    res.json({
+      loggedInUser: {
+        id: me.data.id,
+        display_name: me.data.display_name,
+        email: me.data.email,
+        country: me.data.country
+      },
+      tokenScopes: scopes,
+      targetPlaylist: playlistInfo,
+      match: me.data.id === playlistInfo.owner_id ? "MATCH (You own this playlist)" : "MISMATCH (You do NOT own this playlist!)"
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: err.response?.data || err.message
+    });
   }
 });
 
