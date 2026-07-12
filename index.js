@@ -577,10 +577,11 @@ app.get("/debug", async (req, res) => {
       testFetch = {
         totalFetched: allItems.length,
         validCount: validItems.length,
+        firstItemRaw: allItems[0],
         firstThreeTracks: validItems.slice(0, 3).map(item => ({
-          name: item.track.name,
-          artist: item.track.artists[0]?.name,
-          uri: item.track.uri
+          name: item.track?.name,
+          artist: item.track?.artists?.[0]?.name,
+          uri: item.track?.uri
         }))
       };
     } catch (te) {
