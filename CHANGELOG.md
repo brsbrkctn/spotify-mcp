@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.5] - 2026-07-12
+
+### Fixed
+- **Spotify API DELETE items Payload Update**: Updated the request body payload key from `"tracks"` to `"items"` in `remove_from_playlist` (hitting `DELETE /playlists/{id}/items`). Under Spotify's February 2026 API changes, the request payload schema for deleting playlist items was updated to expect the `"items"` key, returning a 400 "No uris provided" error when the legacy `"tracks"` key was passed.
+
 ## [1.4.4] - 2026-07-12
 
 ### Added

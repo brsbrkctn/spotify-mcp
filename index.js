@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.4",
+    version: "1.4.5",
   },
   {
     capabilities: {
@@ -374,7 +374,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await api.post("/me/player/previous");
         return { content: [{ type: "text", text: "Skipped to previous." }] };
       case "remove_from_playlist":
-        await api.delete(`/playlists/${args.playlistId}/items`, { data: { tracks: args.trackUris.map(uri => ({ uri })) } });
+        await api.delete(`/playlists/${args.playlistId}/items`, { data: { items: args.trackUris.map(uri => ({ uri })) } });
         return { content: [{ type: "text", text: "Tracks removed from playlist." }] };
       case "get_liked_songs": {
         const liked = await api.get("/me/tracks", { params: { limit: args.limit || 20, offset: args.offset || 0 } });
