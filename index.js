@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.4.0",
+    version: "1.4.1",
   },
   {
     capabilities: {
@@ -460,6 +460,7 @@ app.get("/login", (req, res) => {
 
 app.get("/callback", async (req, res) => {
   try {
+    log(`[Auth] Callback received. Exchanging code with Spotify (Redirect URI: ${REDIRECT_URI})...`);
     const response = await axios.post("https://accounts.spotify.com/api/token", new URLSearchParams({
       grant_type: "authorization_code",
       code: req.query.code,
@@ -469,9 +470,10 @@ app.get("/callback", async (req, res) => {
     }), { headers: { "Content-Type": "application/x-www-form-urlencoded" } });
     
     await saveTokens(response.data);
-    res.send("<h1>Authenticated Successfully</h1><p>You can close this window and start using the Spotify MCP.</p>");
+    res.send("<h1>Authenticated Successfully</h1><p>Your session has been saved. You can close this window now.</p>");
   } catch (error) {
-    res.status(500).send("Authentication failed");
+    console.error("[Auth Callback Error]", error.response?.data || error.message);
+    res.status(500).send(`Authentication failed: ${error.response?.data?.error_description || error.message}`);
   }
 });
 
