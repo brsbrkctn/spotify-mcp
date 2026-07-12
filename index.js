@@ -234,7 +234,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.3.8",
+    version: "1.3.9",
   },
   {
     capabilities: {
@@ -254,6 +254,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       { name: "create_playlist", description: "Create a new playlist", inputSchema: { type: "object", properties: { name: { type: "string" }, description: { type: "string" }, public: { type: "boolean" } }, required: ["name"] } },
       { name: "add_to_playlist", description: "Add tracks to a playlist", inputSchema: { type: "object", properties: { playlistId: { type: "string" }, trackUris: { type: "array", items: { type: "string" } } }, required: ["playlistId", "trackUris"] } },
       { name: "get_user_playlists", description: "List user playlists", inputSchema: { type: "object", properties: { limit: { type: "integer" }, offset: { type: "integer" } } } },
+      { name: "get_playlist_tracks", description: "Get tracks from a playlist", inputSchema: { type: "object", properties: { playlistId: { type: "string" }, limit: { type: "integer" }, offset: { type: "integer" } }, required: ["playlistId"] } },
       { 
         name: "search", 
         description: "Search Spotify content", 
@@ -344,6 +345,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "get_user_playlists": {
         const playlists = await api.get("/me/playlists", { params: { limit: args.limit || 20, offset: args.offset || 0 } });
         return { content: [{ type: "text", text: JSON.stringify(playlists.data) }] };
+      }
+      case "get_playlist_tracks": {
+        const tracks = await api.get(`/playlists/${args.playlistId}/tracks`, { params: { limit: args.limit || 20, offset: args.offset || 0 } });
+        return { content: [{ type: "text", text: JSON.stringify(tracks.data) }] };
       }
       case "search": {
         const results = await api.get("/search", { params: { q: args.query, type: args.type.join(","), limit: args.limit || 20 } });
