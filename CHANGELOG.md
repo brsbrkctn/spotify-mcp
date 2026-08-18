@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] - 2026-08-18
+
+### Security
+- **Secured /debug Endpoint**: Added `authMiddleware` protection to the `/debug` endpoint to prevent unauthorized exposure of user profile details on public deployments.
+- **Dynamic Playlist Debugging**: Replaced hardcoded test playlist ID in `/debug` with dynamic `playlist_id` query parameter parsing.
+
+### Documentation
+- **Updated README.md**: Added comprehensive list of all 22 available MCP tools and fully documented Supabase environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
+
 ## [1.5.1] - 2026-07-12
 
 ### Fixed

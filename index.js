@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.1",
+    version: "1.5.2",
   },
   {
     capabilities: {
@@ -536,7 +536,7 @@ app.get("/callback", async (req, res) => {
   }
 });
 
-app.get("/debug", async (req, res) => {
+app.get("/debug", authMiddleware, async (req, res) => {
   try {
     if (!userTokens.access_token) {
       return res.status(401).send("No active token. Please login first by visiting /login");
@@ -550,83 +550,86 @@ app.get("/debug", async (req, res) => {
     // 1. Get user profile
     const me = await api.get("/me");
     
-    // 2. Get playlist details
-    let playlistInfo = "No playlist queried";
-    const targetPlaylistId = "3h6TRrs9qyIXAE2uuViaSn";
-    try {
-      const playlist = await api.get(`/playlists/${targetPlaylistId}`);
-      playlistInfo = {
-        name: playlist.data.name,
-        owner_id: playlist.data.owner.id,
-        owner_display_name: playlist.data.owner.display_name,
-        collaborative: playlist.data.collaborative,
-        public: playlist.data.public
-      };
-    } catch (pe) {
-      playlistInfo = `Error fetching playlist: ${pe.response?.data?.error?.message || pe.message}`;
-    }
+    // 2. Get playlist details if playlistId or playlist_id is provided in query
+    const targetPlaylistId = req.query.playlist_id || req.query.playlistId;
+    let playlistInfo = "No target playlist specified. Pass ?playlist_id=<id> in query to test a specific playlist.";
+    let testFetch = "Pass ?playlist_id=<id> to simulate playlist fetching.";
 
-    // 3. Test pagination & filtering like get_playlist_tracks
-    let testFetch = "Not tested";
-    try {
-      let allItems = [];
-      let limit = 100;
-      let offset = 0;
-      let maxRequested = 500;
-      let hasNext = true;
-
-      while (hasNext) {
-        const response = await api.get(`/playlists/${targetPlaylistId}/items`, {
-          params: { limit, offset }
-        });
-
-        const pageItems = response.data.items || [];
-        allItems.push(...pageItems);
-
-        if (pageItems.length < limit || allItems.length >= maxRequested) {
-          hasNext = false;
-        } else {
-          offset += limit;
-        }
+    if (targetPlaylistId) {
+      try {
+        const playlist = await api.get(`/playlists/${targetPlaylistId}`);
+        playlistInfo = {
+          name: playlist.data.name,
+          owner_id: playlist.data.owner.id,
+          owner_display_name: playlist.data.owner.display_name,
+          collaborative: playlist.data.collaborative,
+          public: playlist.data.public
+        };
+      } catch (pe) {
+        playlistInfo = `Error fetching playlist: ${pe.response?.data?.error?.message || pe.message}`;
       }
 
-      const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
-      const mappedItems = validItems.map(item => ({
-        added_at: item.added_at,
-        item: {
-          id: item.item.id,
-          name: item.item.name,
-          uri: item.item.uri,
-          type: item.item.type,
-          artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
-        },
-        track: {
-          id: item.item.id,
-          name: item.item.name,
-          uri: item.item.uri,
-          type: item.item.type,
-          artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+      // 3. Test pagination & filtering like get_playlist_tracks
+      try {
+        let allItems = [];
+        let limit = 100;
+        let offset = 0;
+        let maxRequested = 500;
+        let hasNext = true;
+
+        while (hasNext) {
+          const response = await api.get(`/playlists/${targetPlaylistId}/items`, {
+            params: { limit, offset }
+          });
+
+          const pageItems = response.data.items || [];
+          allItems.push(...pageItems);
+
+          if (pageItems.length < limit || allItems.length >= maxRequested) {
+            hasNext = false;
+          } else {
+            offset += limit;
+          }
         }
-      }));
-      testFetch = {
-        totalFetched: allItems.length,
-        validCount: mappedItems.length,
-        firstItemRaw: mappedItems[0],
-        firstThreeTracks: mappedItems.slice(0, 3).map(item => ({
-          name: item.track?.name,
-          artist: item.track?.artists?.[0]?.name,
-          uri: item.track?.uri
-        }))
-      };
-    } catch (te) {
-      testFetch = `Error during test fetch: ${te.response?.data?.error?.message || te.message}`;
+
+        const validItems = allItems.filter(item => item && item.item && item.item.id && item.item.uri);
+        const mappedItems = validItems.map(item => ({
+          added_at: item.added_at,
+          item: {
+            id: item.item.id,
+            name: item.item.name,
+            uri: item.item.uri,
+            type: item.item.type,
+            artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+          },
+          track: {
+            id: item.item.id,
+            name: item.item.name,
+            uri: item.item.uri,
+            type: item.item.type,
+            artists: item.item.artists?.map(a => ({ name: a.name, id: a.id })) || []
+          }
+        }));
+        testFetch = {
+          totalFetched: allItems.length,
+          validCount: mappedItems.length,
+          firstItemRaw: mappedItems[0],
+          firstThreeTracks: mappedItems.slice(0, 3).map(item => ({
+            name: item.track?.name,
+            artist: item.track?.artists?.[0]?.name,
+            uri: item.track?.uri
+          }))
+        };
+      } catch (te) {
+        testFetch = `Error during test fetch: ${te.response?.data?.error?.message || te.message}`;
+      }
     }
 
     // 4. Get token scopes from Spotify response headers
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.0",
+      serverVersion: "1.5.2",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
@@ -635,7 +638,7 @@ app.get("/debug", async (req, res) => {
       },
       tokenScopes: scopes,
       targetPlaylist: playlistInfo,
-      match: me.data.id === playlistInfo.owner_id ? "MATCH (You own this playlist)" : "MISMATCH (You do NOT own this playlist!)",
+      match: targetPlaylistId && playlistInfo.owner_id ? (me.data.id === playlistInfo.owner_id ? "MATCH (You own this playlist)" : "MISMATCH (You do NOT own this playlist!)") : "N/A",
       testFetch
     });
   } catch (err) {

@@ -92,15 +92,48 @@ Recommended for accessing your home Spotify setup from anywhere via cloud platfo
 
 ---
 
+## Available MCP Tools
+
+This server equips AI assistants with the following tools out of the box:
+
+| Tool | Description | Parameters |
+| :--- | :--- | :--- |
+| `get_current_track` | Get the currently playing track and its progress | None |
+| `play_pause` | Resume or pause playback | `action` ("play" \| "pause") |
+| `set_volume` | Set playback volume level | `volume_percent` (0-100) |
+| `get_playback_state` | Get full playback state (device, shuffle, repeat, etc.) | None |
+| `skip_to_next` | Skip to next track in queue | None |
+| `skip_to_previous` | Skip to previous track | None |
+| `set_shuffle_state` | Toggle shuffle mode on/off | `state` (boolean) |
+| `set_repeat_mode` | Set repeat mode | `state` ("track" \| "context" \| "off") |
+| `add_to_queue` | Add a track URI to the live playback queue | `uri` (string) |
+| `get_queue` | Retrieve user's current playback queue | None |
+| `search` | Search for tracks, albums, artists, or playlists | `query` (string), `type` (array), `limit` (optional) |
+| `create_playlist` | Create a new public or private playlist | `name` (string), `description` (optional), `public` (optional) |
+| `add_to_playlist` | Add tracks to a playlist using Spotify URIs | `playlistId` (string), `trackUris` (array) |
+| `remove_from_playlist` | Remove specific tracks from a playlist | `playlistId` (string), `trackUris` (array) |
+| `get_user_playlists` | List the authenticated user's playlists | `limit` (optional), `offset` (optional) |
+| `get_playlist_tracks` | Get valid items from a playlist (auto-paginates & filters null items) | `playlistId` (string) |
+| `get_liked_songs` | Retrieve tracks saved in user's library | `limit` (optional), `offset` (optional) |
+| `save_tracks` | Save one or more tracks to user's library | `trackUris` (array) |
+| `remove_saved_tracks` | Remove one or more tracks from user's library | `trackUris` (array) |
+| `get_available_devices` | Get all connected Spotify Connect devices | None |
+| `transfer_playback` | Transfer playback to a specific device ID | `deviceId` (string), `play` (optional) |
+| `get_recommendations` | Generate recommendations based on seed artists, genres, or tracks | `seed_artists` (optional), `seed_genres` (optional), `seed_tracks` (optional), `limit` (optional) |
+
+---
+
 ## Configuration Details
 
 | Variable | Description | Default |
 | :--- | :--- | :--- |
 | `SPOTIFY_CLIENT_ID` | Your Spotify App Client ID | Required |
 | `SPOTIFY_CLIENT_SECRET` | Your Spotify App Client Secret | Required |
-| `REDIRECT_URI` | The callback URL configured in Spotify | Required |
-| `API_KEY` | Optional security key for remote setups | Disabled |
-| `PORT` | The local port to listen on | 3000 |
+| `REDIRECT_URI` | The callback URL configured in Spotify Developer Portal | `http://localhost:3000/callback` |
+| `API_KEY` | Optional security key for remote/cloud setups | Disabled |
+| `SUPABASE_URL` | Optional Supabase project URL for cloud session persistence | Optional |
+| `SUPABASE_ANON_KEY` | Optional Supabase anon public API key | Optional |
+| `PORT` | The local port to listen on | `3000` |
 | `TRANSPORT` | Set to `stdio` to force stdio mode | Optional |
 
 ---
