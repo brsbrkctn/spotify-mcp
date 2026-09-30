@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.2",
+    version: "1.5.3",
   },
   {
     capabilities: {
@@ -534,6 +534,36 @@ app.get("/callback", async (req, res) => {
     console.error("[Auth Callback Error]", error.response?.data || error.message);
     res.status(500).send(`Authentication failed: ${error.response?.data?.error_description || error.message}`);
   }
+});
+
+/**
+ * Health check & Keep-alive endpoint
+ * Pings Supabase to prevent project pausing and keeps Render container warm.
+ * Intentionally unauthenticated so it can be pinged by automated uptime monitors.
+ */
+app.get("/health", async (req, res) => {
+  let supabaseStatus = "not_configured";
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    try {
+      await axios.get(`${SUPABASE_URL}/rest/v1/spotify_auth`, {
+        params: { id: "eq.session", select: "id" },
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+      });
+      supabaseStatus = "connected";
+    } catch (e) {
+      supabaseStatus = `error: ${e.message}`;
+    }
+  }
+
+  res.json({
+    status: "ok",
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString(),
+    supabase: supabaseStatus,
+  });
 });
 
 app.get("/debug", authMiddleware, async (req, res) => {
