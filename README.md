@@ -133,6 +133,7 @@ This server equips AI assistants with the following tools out of the box:
 | `API_KEY` | Optional security key for remote/cloud setups | Disabled |
 | `SUPABASE_URL` | Optional Supabase project URL for cloud session persistence | Optional |
 | `SUPABASE_ANON_KEY` | Optional Supabase anon public API key | Optional |
+| `SUPABASE_SERVICE_ROLE_KEY` | Recommended secret key for private cloud instances (Render) to access token storage with RLS enabled | Optional |
 | `PORT` | The local port to listen on | `3000` |
 | `TRANSPORT` | Set to `stdio` to force stdio mode | Optional |
 

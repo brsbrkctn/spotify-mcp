@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] - 2026-11-03
+
+### Security
+- **Backend Service Role Key Support**: Added first-class support for `SUPABASE_SERVICE_ROLE_KEY` in environment variables. This allows the backend to access token persistence with Row Level Security (RLS) fully enabled on the `spotify_auth` table, closing public `anon` exposure and complying with Supabase security advisories.
+
 ## [1.5.3] - 2026-09-30
 
 ### Added

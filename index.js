@@ -27,9 +27,9 @@ const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || "http://localhost:3000/callback";
 const API_KEY = process.env.API_KEY;
 
-// Supabase environment variables (supports standard and next-public names)
+// Supabase environment variables (supports service_role key for secure backend storage and anon key for fallback)
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Check if stdio mode is requested via command line argument or environment variable
 const useStdio = process.argv.includes("--stdio") || process.env.TRANSPORT === "stdio";
@@ -79,14 +79,14 @@ let userTokens = {
  * Fails gracefully in diskless/read-only environments.
  */
 const loadTokens = async () => {
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       log("[Auth] Connecting to Supabase to load tokens...");
       const response = await axios.get(`${SUPABASE_URL}/rest/v1/spotify_auth`, {
         params: { id: "eq.session" },
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
         },
       });
 
@@ -147,7 +147,7 @@ const saveTokens = async (tokens) => {
     expires_at: tokens.expires_in ? Date.now() + tokens.expires_in * 1000 : userTokens.expires_at,
   };
 
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       log("[Auth] Saving tokens to Supabase...");
       await axios.post(
@@ -161,8 +161,8 @@ const saveTokens = async (tokens) => {
         },
         {
           headers: {
-            apikey: SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
             "Content-Type": "application/json",
             Prefer: "resolution=merge-duplicates", // Upsert behavior in PostgREST
           },
@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.3",
+    version: "1.5.4",
   },
   {
     capabilities: {
@@ -543,13 +543,13 @@ app.get("/callback", async (req, res) => {
  */
 app.get("/health", async (req, res) => {
   let supabaseStatus = "not_configured";
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       await axios.get(`${SUPABASE_URL}/rest/v1/spotify_auth`, {
         params: { id: "eq.session", select: "id" },
         headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
         },
       });
       supabaseStatus = "connected";
@@ -659,7 +659,7 @@ app.get("/debug", authMiddleware, async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.2",
+      serverVersion: "1.5.4",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
