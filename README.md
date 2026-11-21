@@ -6,8 +6,11 @@ It supports both **Stdio** transport (preferred for local AI clients like Claude
 
 ## Core Capabilities
 
-- **Seamless Playback**: Command the AI to play, pause, skip, or adjust volume across your active devices.
-- **Smart Discovery**: Search for music or generate high-quality recommendations based on seed artists, genres, or tracks (validating limits beforehand).
+- **Seamless Playback**: Command the AI to play, pause, skip, scrub/seek to timestamps, or adjust volume across active devices.
+- **Smart Discovery**: Search across Spotify or generate high-quality recommendations based on seed artists, genres, or tracks.
+- **Personalized Insights**: Query top tracks/artists across time horizons (short, medium, long term) and view recent listening history.
+- **Full Playlist Studio**: Create playlists, edit names/descriptions, toggle public/collaborative visibility, and upload custom base64 cover images.
+- **Social & Following**: Follow/unfollow artists and users, list followed creators, and inspect user profiles.
 - **Library Management**: Access and manage your Liked Songs and personal playlists with natural language.
 - **Queue Control**: Add tracks to your real-time queue and manage shuffle/repeat modes.
 - **Device Handover**: List available Spotify Connect devices and transfer playback between them instantly.
@@ -92,15 +95,16 @@ Recommended for accessing your home Spotify setup from anywhere via cloud platfo
 
 ---
 
-## Available MCP Tools
+## Available MCP Tools (32 Tools)
 
-This server equips AI assistants with the following tools out of the box:
+This server equips AI assistants with the following 32 tools out of the box:
 
 | Tool | Description | Parameters |
 | :--- | :--- | :--- |
 | `get_current_track` | Get the currently playing track and its progress | None |
 | `play_pause` | Resume or pause playback | `action` ("play" \| "pause") |
 | `set_volume` | Set playback volume level | `volume_percent` (0-100) |
+| `seek_to_position` | Seek to a specific timestamp in currently playing track | `position_ms` (optional), `position_seconds` (optional), `device_id` (optional) |
 | `get_playback_state` | Get full playback state (device, shuffle, repeat, etc.) | None |
 | `skip_to_next` | Skip to next track in queue | None |
 | `skip_to_previous` | Skip to previous track | None |
@@ -114,12 +118,21 @@ This server equips AI assistants with the following tools out of the box:
 | `remove_from_playlist` | Remove specific tracks from a playlist | `playlistId` (string), `trackUris` (array) |
 | `get_user_playlists` | List the authenticated user's playlists | `limit` (optional), `offset` (optional) |
 | `get_playlist_tracks` | Get valid items from a playlist (auto-paginates & filters null items) | `playlistId` (string) |
+| `change_playlist_details` | Update playlist name, description, public/private visibility, or collaborative mode | `playlistId` (string), `name` (optional), `description` (optional), `public` (optional), `collaborative` (optional) |
+| `upload_playlist_cover` | Upload a custom base64-encoded JPEG image as the playlist cover (max 256KB) | `playlistId` (string), `imageBase64` (string) |
 | `get_liked_songs` | Retrieve tracks saved in user's library | `limit` (optional), `offset` (optional) |
 | `save_tracks` | Save one or more tracks to user's library | `trackUris` (array) |
 | `remove_saved_tracks` | Remove one or more tracks from user's library | `trackUris` (array) |
+| `get_top_artists_and_tracks` | Fetch top artists or tracks over short, medium, or long term | `type` ("artists" \| "tracks"), `time_range` (optional), `limit` (optional), `offset` (optional) |
+| `get_recently_played` | Get user's recently played track timeline | `limit` (optional), `before` (optional), `after` (optional) |
 | `get_available_devices` | Get all connected Spotify Connect devices | None |
 | `transfer_playback` | Transfer playback to a specific device ID | `deviceId` (string), `play` (optional) |
 | `get_recommendations` | Generate recommendations based on seed artists, genres, or tracks | `seed_artists` (optional), `seed_genres` (optional), `seed_tracks` (optional), `limit` (optional) |
+| `follow_artists_or_users` | Follow one or more artists or users | `type` ("artist" \| "user"), `ids` (array) |
+| `unfollow_artists_or_users` | Unfollow one or more artists or users | `type` ("artist" \| "user"), `ids` (array) |
+| `get_followed_artists` | Retrieve user's followed artists | `limit` (optional), `after` (optional) |
+| `check_user_follows` | Check if user follows specified artists, users, or playlist | `type` ("artist" \| "user" \| "playlist"), `id` (optional), `ids` (optional) |
+| `get_user_profile` | Get current user profile details (ID, display name, email, subscription type) | None |
 
 ---
 

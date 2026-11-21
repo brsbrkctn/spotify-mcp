@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.7",
+    version: "1.6.0",
   },
   {
     capabilities: {
@@ -311,6 +311,124 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       { name: "set_repeat_mode", description: "Set repeat mode", inputSchema: { type: "object", properties: { state: { type: "string", enum: ["track", "context", "off"] } }, required: ["state"] } },
       { name: "add_to_queue", description: "Add item to queue", inputSchema: { type: "object", properties: { uri: { type: "string" } }, required: ["uri"] } },
       { name: "get_queue", description: "Get current queue", inputSchema: { type: "object", properties: {} } },
+      { 
+        name: "seek_to_position", 
+        description: "Seek to a specific position in the currently playing track", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            position_ms: { type: "integer", description: "Position in milliseconds" }, 
+            position_seconds: { type: "number", description: "Position in seconds" }, 
+            device_id: { type: "string", description: "Optional device ID" } 
+          } 
+        } 
+      },
+      { 
+        name: "upload_playlist_cover", 
+        description: "Upload a custom base64-encoded JPEG image as the playlist cover (max 256KB)", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            playlistId: { type: "string", description: "Spotify playlist ID" }, 
+            imageBase64: { type: "string", description: "Base64 encoded JPEG image data" } 
+          }, 
+          required: ["playlistId", "imageBase64"] 
+        } 
+      },
+      { 
+        name: "change_playlist_details", 
+        description: "Update playlist name, description, public/private visibility, or collaborative setting", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            playlistId: { type: "string", description: "Spotify playlist ID" }, 
+            name: { type: "string", description: "New playlist name" }, 
+            description: { type: "string", description: "New playlist description" }, 
+            public: { type: "boolean", description: "Whether the playlist is public" }, 
+            collaborative: { type: "boolean", description: "Whether the playlist is collaborative" } 
+          }, 
+          required: ["playlistId"] 
+        } 
+      },
+      { 
+        name: "get_top_artists_and_tracks", 
+        description: "Get user's top artists or tracks over a specified time range (short_term: 4 weeks, medium_term: 6 months, long_term: years)", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            type: { type: "string", enum: ["artists", "tracks"], description: "Whether to fetch top artists or tracks" }, 
+            time_range: { type: "string", enum: ["short_term", "medium_term", "long_term"], default: "medium_term" }, 
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 }, 
+            offset: { type: "integer", default: 0 } 
+          }, 
+          required: ["type"] 
+        } 
+      },
+      { 
+        name: "get_recently_played", 
+        description: "Get the current user's recently played tracks", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 }, 
+            before: { type: "integer", description: "Unix timestamp in ms to fetch items played before" }, 
+            after: { type: "integer", description: "Unix timestamp in ms to fetch items played after" } 
+          } 
+        } 
+      },
+      { 
+        name: "follow_artists_or_users", 
+        description: "Follow one or more artists or users", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            type: { type: "string", enum: ["artist", "user"], default: "artist" }, 
+            ids: { type: "array", items: { type: "string" }, description: "Array of Spotify IDs to follow" } 
+          }, 
+          required: ["ids"] 
+        } 
+      },
+      { 
+        name: "unfollow_artists_or_users", 
+        description: "Unfollow one or more artists or users", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            type: { type: "string", enum: ["artist", "user"], default: "artist" }, 
+            ids: { type: "array", items: { type: "string" }, description: "Array of Spotify IDs to unfollow" } 
+          }, 
+          required: ["ids"] 
+        } 
+      },
+      { 
+        name: "get_followed_artists", 
+        description: "Get user's followed artists", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            limit: { type: "integer", minimum: 1, maximum: 50, default: 20 }, 
+            after: { type: "string", description: "Cursor after which to fetch artists" } 
+          } 
+        } 
+      },
+      { 
+        name: "check_user_follows", 
+        description: "Check if the current user follows artists, users, or a playlist", 
+        inputSchema: { 
+          type: "object", 
+          properties: { 
+            type: { type: "string", enum: ["artist", "user", "playlist"], default: "artist" }, 
+            id: { type: "string", description: "Playlist ID (when type is playlist)" }, 
+            ids: { type: "array", items: { type: "string" }, description: "Array of artist or user IDs" } 
+          }, 
+          required: ["type"] 
+        } 
+      },
+      { 
+        name: "get_user_profile", 
+        description: "Get the current authenticated user's profile details (ID, display name, email, subscription type, country, follower count)", 
+        inputSchema: { type: "object", properties: {} } 
+      },
     ],
   };
 });
@@ -464,6 +582,89 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const queue = await api.get("/me/player/queue");
         return { content: [{ type: "text", text: JSON.stringify(queue.data) }] };
       }
+      case "seek_to_position": {
+        let ms = args.position_ms;
+        if (ms === undefined && args.position_seconds !== undefined) {
+          ms = Math.round(args.position_seconds * 1000);
+        }
+        if (ms === undefined) {
+          throw new Error("Must provide either position_ms or position_seconds.");
+        }
+        await api.put(`/me/player/seek?position_ms=${ms}${args.device_id ? `&device_id=${args.device_id}` : ""}`);
+        return { content: [{ type: "text", text: `Playback position seeked to ${ms}ms.` }] };
+      }
+      case "upload_playlist_cover": {
+        const cleanBase64 = args.imageBase64.replace(/^data:image\/[a-z]+;base64,/, "").trim();
+        await api.put(`/playlists/${args.playlistId}/images`, cleanBase64, {
+          headers: { "Content-Type": "image/jpeg" }
+        });
+        return { content: [{ type: "text", text: `Cover image successfully uploaded for playlist ${args.playlistId}.` }] };
+      }
+      case "change_playlist_details": {
+        const payload = {};
+        if (args.name !== undefined) payload.name = args.name;
+        if (args.description !== undefined) payload.description = args.description;
+        if (args.public !== undefined) payload.public = args.public;
+        if (args.collaborative !== undefined) payload.collaborative = args.collaborative;
+        await api.put(`/playlists/${args.playlistId}`, payload);
+        return { content: [{ type: "text", text: `Playlist details updated for ${args.playlistId}.` }] };
+      }
+      case "get_top_artists_and_tracks": {
+        const topType = args.type === "artists" ? "artists" : "tracks";
+        const top = await api.get(`/me/top/${topType}`, {
+          params: {
+            time_range: args.time_range || "medium_term",
+            limit: args.limit || 20,
+            offset: args.offset || 0
+          }
+        });
+        return { content: [{ type: "text", text: JSON.stringify(top.data) }] };
+      }
+      case "get_recently_played": {
+        const recent = await api.get("/me/player/recently-played", {
+          params: {
+            limit: args.limit || 20,
+            before: args.before,
+            after: args.after
+          }
+        });
+        return { content: [{ type: "text", text: JSON.stringify(recent.data) }] };
+      }
+      case "follow_artists_or_users": {
+        const type = args.type || "artist";
+        await api.put(`/me/following?type=${type}&ids=${args.ids.join(",")}`);
+        return { content: [{ type: "text", text: `Successfully followed ${args.ids.length} ${type}(s).` }] };
+      }
+      case "unfollow_artists_or_users": {
+        const type = args.type || "artist";
+        await api.delete(`/me/following?type=${type}&ids=${args.ids.join(",")}`);
+        return { content: [{ type: "text", text: `Successfully unfollowed ${args.ids.length} ${type}(s).` }] };
+      }
+      case "get_followed_artists": {
+        const followed = await api.get("/me/following", {
+          params: { type: "artist", limit: args.limit || 20, after: args.after }
+        });
+        return { content: [{ type: "text", text: JSON.stringify(followed.data) }] };
+      }
+      case "check_user_follows": {
+        if (args.type === "playlist") {
+          const user = await api.get("/me");
+          const follows = await api.get(`/playlists/${args.id}/followers/contains`, {
+            params: { ids: user.data.id }
+          });
+          return { content: [{ type: "text", text: JSON.stringify({ follows_playlist: follows.data[0] }) }] };
+        } else {
+          const ids = args.ids || (args.id ? [args.id] : []);
+          const follows = await api.get("/me/following/contains", {
+            params: { type: args.type || "artist", ids: ids.join(",") }
+          });
+          return { content: [{ type: "text", text: JSON.stringify(follows.data) }] };
+        }
+      }
+      case "get_user_profile": {
+        const user = await api.get("/me");
+        return { content: [{ type: "text", text: JSON.stringify(user.data) }] };
+      }
       default:
         throw new Error(`Tool not found: ${name}`);
     }
@@ -488,7 +689,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Intercept playback command failures when no active device exists (status 404 or specific error body)
     const status = error.response?.status;
     const errorMsg = error.response?.data?.error?.message || "";
-    const playbackCommandTools = ["play_pause", "set_volume", "skip_to_next", "skip_to_previous", "set_shuffle_state", "set_repeat_mode", "add_to_queue"];
+    const playbackCommandTools = ["play_pause", "set_volume", "skip_to_next", "skip_to_previous", "set_shuffle_state", "set_repeat_mode", "add_to_queue", "seek_to_position"];
     
     if (playbackCommandTools.includes(name) && (status === 404 || errorMsg.toLowerCase().includes("no active device") || errorMsg.toLowerCase().includes("restriction violated"))) {
       return {
@@ -511,9 +712,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 app.get("/login", (req, res) => {
   const scopes = [
     "ugc-image-upload",
-    "user-read-currently-playing", "user-modify-playback-state", "user-read-playback-state",
-    "playlist-modify-public", "playlist-modify-private", "playlist-read-private",
-    "user-library-read", "user-library-modify"
+    "user-read-currently-playing",
+    "user-modify-playback-state",
+    "user-read-playback-state",
+    "playlist-modify-public",
+    "playlist-modify-private",
+    "playlist-read-private",
+    "playlist-read-collaborative",
+    "user-library-read",
+    "user-library-modify",
+    "user-top-read",
+    "user-read-recently-played",
+    "user-follow-read",
+    "user-follow-modify",
+    "user-read-private",
+    "user-read-email",
+    "user-read-playback-position"
   ].join(" ");
   res.redirect(`https://accounts.spotify.com/authorize?response_type=code&client_id=${SPOTIFY_CLIENT_ID}&scope=${encodeURIComponent(scopes)}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`);
 });
@@ -661,7 +875,7 @@ app.get("/debug", authMiddleware, async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.7",
+      serverVersion: "1.6.0",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-11-22
+
+### Added
+- **Full-Spectrum OAuth Permissions**: Expanded Spotify OAuth scopes to include `ugc-image-upload`, `user-top-read`, `user-read-recently-played`, `user-follow-read`, `user-follow-modify`, `playlist-read-collaborative`, `user-read-private`, `user-read-email`, and `user-read-playback-position`.
+- **Custom Playlist Cover Upload (`upload_playlist_cover`)**: Implemented tool to upload base64-encoded JPEG image covers to any playlist.
+- **Top Tracks & Artists Analytics (`get_top_artists_and_tracks`)**: Implemented tool to query user's top tracks and artists over `short_term`, `medium_term`, and `long_term` periods.
+- **Recently Played History (`get_recently_played`)**: Implemented tool to inspect the user's recently played track timeline.
+- **Precise Track Seeking (`seek_to_position`)**: Added playback scrubbing tool supporting both `position_ms` and `position_seconds`.
+- **Playlist Details Editor (`change_playlist_details`)**: Added ability to rename, change descriptions, and toggle public/collaborative status on existing playlists.
+- **Artist & User Following (`follow_artists_or_users`, `unfollow_artists_or_users`, `get_followed_artists`)**: Added complete follow/unfollow and following list management tools.
+- **Follow Status Checker (`check_user_follows`)**: Added verification tool for artists, users, and playlist followers.
+- **User Profile Inspector (`get_user_profile`)**: Added endpoint tool to retrieve subscription type, email, country, and follower counts.
+- **Documentation**: Comprehensive updates to `README.md` reflecting all 32 registered tools and expanded OAuth scopes.
+
 ## [1.5.7] - 2026-11-22
 
 ### Added
