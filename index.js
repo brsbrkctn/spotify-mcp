@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.6",
+    version: "1.5.7",
   },
   {
     capabilities: {
@@ -510,6 +510,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // OAuth Flow
 app.get("/login", (req, res) => {
   const scopes = [
+    "ugc-image-upload",
     "user-read-currently-playing", "user-modify-playback-state", "user-read-playback-state",
     "playlist-modify-public", "playlist-modify-private", "playlist-read-private",
     "user-library-read", "user-library-modify"
@@ -660,7 +661,7 @@ app.get("/debug", authMiddleware, async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.6",
+      serverVersion: "1.5.7",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
