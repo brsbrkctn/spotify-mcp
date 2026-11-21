@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.5] - 2026-11-21
+
+### Added
+- **Secondary Keep-Alive Scheduled GitHub Action**: Added a GitHub Actions workflow (`.github/workflows/keep-alive.yml`) scheduled to ping the `/health` endpoint every 10 minutes. Serves as an automated failover monitor alongside cron-job.org to keep Render containers warm and prevent Supabase dormancy.
+
 ## [1.5.4] - 2026-11-03
 
 ### Security

@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.4",
+    version: "1.5.5",
   },
   {
     capabilities: {
@@ -659,7 +659,7 @@ app.get("/debug", authMiddleware, async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.4",
+      serverVersion: "1.5.5",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,

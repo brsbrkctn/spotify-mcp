@@ -1,0 +1,18 @@
+name: Keep-Alive Monitor
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free container spin-down and Supabase dormancy
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub UI / API
+
+jobs:
+  keep-alive:
+    name: Ping Health Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /health
+        run: |
+          echo "Sending keep-alive request to Render and Supabase..."
+          curl -s -S --max-time 60 https://spotify-mcp-si6r.onrender.com/health || echo "Ping failed, but workflow finished cleanly"
