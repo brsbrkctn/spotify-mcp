@@ -235,7 +235,7 @@ const getValidToken = async (forceRefresh = false) => {
 const server = new Server(
   {
     name: "spotify-mcp",
-    version: "1.5.5",
+    version: "1.5.6",
   },
   {
     capabilities: {
@@ -568,13 +568,14 @@ app.get("/health", async (req, res) => {
 
 app.get("/debug", authMiddleware, async (req, res) => {
   try {
-    if (!userTokens.access_token) {
+    const accessToken = await getValidToken();
+    if (!accessToken) {
       return res.status(401).send("No active token. Please login first by visiting /login");
     }
 
     const api = axios.create({
       baseURL: "https://api.spotify.com/v1",
-      headers: { Authorization: `Bearer ${userTokens.access_token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     // 1. Get user profile
@@ -659,7 +660,7 @@ app.get("/debug", authMiddleware, async (req, res) => {
     const scopes = me.headers["x-oauth-scopes"] || "unknown";
 
     res.json({
-      serverVersion: "1.5.5",
+      serverVersion: "1.5.6",
       loggedInUser: {
         id: me.data.id,
         display_name: me.data.display_name,
